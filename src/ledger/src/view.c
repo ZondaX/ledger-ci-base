@@ -17,9 +17,12 @@
 #include <string.h>
 #include "glyphs.h"
 #include "view.h"
+#include "view_templates.h"
 
 ux_state_t ux;
 enum UI_STATE view_uiState;
+
+char long_text[100];
 
 ////////////////////////////////////////////////
 //------ View elements
@@ -39,25 +42,43 @@ const ux_menu_entry_t menu_about[] = {
         UX_MENU_END
 };
 
-void io_seproxyhal_display(const bagl_element_t *element) {
-    io_seproxyhal_display_default((bagl_element_t *) element);
+static const bagl_element_t bagl_ui_somedata[] = {
+        UI_FillRectangle(0, 0, 0, 128, 32, 0x000000, 0xFFFFFF),
+        UI_LabelLine(0x02, 0, 11, 128, 11, WHITE, BLACK, "Fixed"),
+        UI_LabelLine(0x02, 0, 25, 128, 11, WHITE, BLACK, long_text),
+};
+
+void io_seproxyhal_display(const bagl_element_t* element)
+{
+    io_seproxyhal_display_default((bagl_element_t*) element);
+}
+
+const bagl_element_t* bagl_ui_somedata_prepro(const bagl_element_t* element)
+{
+    switch (element->component.userid) {
+    case 0x01:UX_CALLBACK_SET_INTERVAL(2000);
+        break;
+    case 0x02: {
+        UX_CALLBACK_SET_INTERVAL(MAX(3000, 1000+bagl_label_roundtrip_duration_ms(element, 7)));
+    }
+        break;
+    }
+    return element;
 }
 
 ////////////////////////////////////////////////
 //------ Event handlers
 
-static const bagl_element_t *io_seproxyhal_touch_exit(const bagl_element_t *e) {
-    os_sched_exit(0);   // Go back to the dashboard
-    return NULL; // do not redraw the widget
-}
-
-static unsigned int bagl_ui_idle_nanos_button(unsigned int button_mask,
-                                              unsigned int button_mask_counter) {
+static unsigned int bagl_ui_somedata_button(
+        unsigned int button_mask,
+        unsigned int button_mask_counter)
+{
     switch (button_mask) {
-        case BUTTON_EVT_RELEASED | BUTTON_LEFT:
-        case BUTTON_EVT_RELEASED | BUTTON_LEFT | BUTTON_RIGHT:
-            io_seproxyhal_touch_exit(NULL);
-            break;
+    case BUTTON_EVT_RELEASED | BUTTON_LEFT:
+    case BUTTON_EVT_RELEASED | BUTTON_LEFT | BUTTON_RIGHT: {
+        os_sched_exit(0);
+    }
+        break;
     }
     return 0;
 }
@@ -68,11 +89,13 @@ static unsigned int bagl_ui_idle_nanos_button(unsigned int button_mask,
 void view_init(void)
 {
     UX_INIT();
+    strcpy(long_text, "Key generation is very long");
     view_uiState = UI_IDLE;
 }
 
 void view_idle(void)
 {
     view_uiState = UI_IDLE;
-    UX_MENU_DISPLAY(0, menu_main, NULL);
+//    UX_MENU_DISPLAY(0, menu_main, menu_main_prepro);
+    UX_DISPLAY(bagl_ui_somedata, bagl_ui_somedata_prepro);
 }
