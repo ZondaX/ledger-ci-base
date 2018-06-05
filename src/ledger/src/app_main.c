@@ -23,6 +23,8 @@
 
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
+#define CONDITIONAL_REDISPLAY  { if (UX_ALLOWED) UX_REDISPLAY() };
+
 unsigned char io_event(unsigned char channel) {
     switch (G_io_seproxyhal_spi_buffer[0]) {
         case SEPROXYHAL_TAG_FINGER_EVENT: //
@@ -38,7 +40,8 @@ unsigned char io_event(unsigned char channel) {
                 UX_DISPLAYED_EVENT();
             break;
 
-        case SEPROXYHAL_TAG_TICKER_EVENT:   //
+        case SEPROXYHAL_TAG_TICKER_EVENT:
+            UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, CONDITIONAL_REDISPLAY);
             break;
 
             // unknown events are acknowledged

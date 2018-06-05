@@ -29,6 +29,7 @@ const ux_menu_entry_t menu_about[];
 
 const ux_menu_entry_t menu_main[] = {
         {NULL, NULL, 0, &C_icon_app, "Example", "Demo", 32, 11},
+        {NULL, NULL, 0x55, NULL, "Title", " This is a very long string ", 0, 16},
         {menu_about, NULL, 0, NULL, "About", NULL, 0, 0},
         {NULL, os_sched_exit, 0, &C_icon_dashboard, "Quit app", NULL, 50, 29},
         UX_MENU_END
@@ -39,25 +40,43 @@ const ux_menu_entry_t menu_about[] = {
         UX_MENU_END
 };
 
-void io_seproxyhal_display(const bagl_element_t *element) {
-    io_seproxyhal_display_default((bagl_element_t *) element);
+void io_seproxyhal_display(const bagl_element_t* element)
+{
+    io_seproxyhal_display_default((bagl_element_t*) element);
+}
+
+const bagl_element_t* menu_main_prepro(const ux_menu_entry_t* menu_entry, bagl_element_t* element)
+{
+    if (menu_entry->userid == 0x55) {
+        switch (element->component.userid) {
+        case 0x21: // 1st line
+            // element->component.font_id = BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER;
+            break;
+        case 0x22: // 2nd line
+            element->component.stroke = 10 | BAGL_STROKE_FLAG_ONESHOT;  // scrolldelay
+            element->component.icon_id = 50; // scrollspeed
+            break;
+        }
+    }
+    return element;
 }
 
 ////////////////////////////////////////////////
 //------ Event handlers
 
-static const bagl_element_t *io_seproxyhal_touch_exit(const bagl_element_t *e) {
+static const bagl_element_t* io_seproxyhal_touch_exit(const bagl_element_t* e)
+{
     os_sched_exit(0);   // Go back to the dashboard
     return NULL; // do not redraw the widget
 }
 
 static unsigned int bagl_ui_idle_nanos_button(unsigned int button_mask,
-                                              unsigned int button_mask_counter) {
+        unsigned int button_mask_counter)
+{
     switch (button_mask) {
-        case BUTTON_EVT_RELEASED | BUTTON_LEFT:
-        case BUTTON_EVT_RELEASED | BUTTON_LEFT | BUTTON_RIGHT:
-            io_seproxyhal_touch_exit(NULL);
-            break;
+    case BUTTON_EVT_RELEASED | BUTTON_LEFT:
+    case BUTTON_EVT_RELEASED | BUTTON_LEFT | BUTTON_RIGHT:io_seproxyhal_touch_exit(NULL);
+        break;
     }
     return 0;
 }
@@ -74,5 +93,6 @@ void view_init(void)
 void view_idle(void)
 {
     view_uiState = UI_IDLE;
-    UX_MENU_DISPLAY(0, menu_main, NULL);
+    UX_MENU_DISPLAY(0, menu_main, menu_main_prepro);
+    UX_CALLBACK_SET_INTERVAL(100);
 }
